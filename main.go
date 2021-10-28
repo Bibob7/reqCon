@@ -1,4 +1,4 @@
-package reqCon
+package main
 
 import (
 	"github.com/Bibob7/reqCon/pkg/engine"
