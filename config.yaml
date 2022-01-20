@@ -1,0 +1,5 @@
+number: 1000
+concurrent: 10
+request:
+  method: GET
+  url: https://api.the-archi.tech/v1/posts

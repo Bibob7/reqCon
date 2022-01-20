@@ -8,25 +8,25 @@ import (
 )
 
 func FromFile(filePath string) (*Config, error) {
-	var config *Config
+	var config Config
 	fileContent, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return nil, err
 	}
 	if isYAML(filePath) {
-		err = yaml.Unmarshal(fileContent, config)
+		err = yaml.Unmarshal(fileContent, &config)
 		if err != nil {
 			return nil, err
 		}
 	}
 	if isJSON(filePath) {
-		err = json.Unmarshal(fileContent, config)
+		err = json.Unmarshal(fileContent, &config)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	return config, nil
+	return &config, nil
 }
 
 func isYAML(filePath string) bool {

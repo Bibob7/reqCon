@@ -17,11 +17,11 @@ func main() {
 			if c.NArg() > 0 {
 				configPath = c.Args().Get(0)
 			}
-			config, err := config.FromFile(configPath)
+			con, err := config.FromFile(configPath)
 			if err != nil {
 				return err
 			}
-			return engine.Run(*config)
+			return engine.Run(*con)
 		},
 	}
 

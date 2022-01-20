@@ -3,9 +3,10 @@ package http
 import (
 	"bytes"
 	"net/http"
+	"time"
 )
 
-func SendReq(req Request) error {
+func SendReq(req Request, reqTimes chan time.Duration) error {
 	buffer := &bytes.Buffer{}
 	_, err := buffer.Read(req.Body)
 	if err != nil {
@@ -16,9 +17,15 @@ func SendReq(req Request) error {
 		return err
 	}
 	client := http.Client{}
-	_, err = client.Do(httpReq)
+	startTime := time.Now()
+	res, err := client.Do(httpReq)
+	endTime := time.Now()
+	reqTimes <- endTime.Sub(startTime)
 	if err != nil {
 		return err
 	}
+	defer res.Body.Close()
+	var bodyContent []byte
+	res.Body.Read(bodyContent)
 	return nil
 }
