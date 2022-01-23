@@ -1,14 +1,15 @@
 package config
 
 import (
-	"github.com/Bibob7/reqCon/pkg/http"
+	"github.com/Bibob7/reqCon/pkg/expectations"
 	"io/ioutil"
 )
 
 type Config struct {
-	ReqNum        int     `yaml:"number" json:"number"`
-	ConcNum       int     `yaml:"concurrent" json:"concurrent"`
-	RequestConfig Request `yaml:"request" json:"request"`
+	ReqNum          int               `yaml:"number" json:"number"`
+	ConcNum         int               `yaml:"concurrent" json:"concurrent"`
+	RequestConfig   Request           `yaml:"request" json:"request"`
+	ExpectationList expectations.List `yaml:"expectations" json:"expectations"`
 }
 
 type Request struct {
@@ -23,20 +24,7 @@ type Body struct {
 	FilePath string `yaml:"path,omitempty" json:"path,omitempty"`
 }
 
-func (c *Config) Request() (*http.Request, error) {
-	body, err := c.body()
-	if err != nil {
-		return nil, err
-	}
-	return &http.Request{
-		Method: c.RequestConfig.Method,
-		Url:    c.RequestConfig.Url,
-		Header: c.RequestConfig.Header,
-		Body:   body,
-	}, nil
-}
-
-func (c *Config) body() ([]byte, error) {
+func (c *Config) Body() ([]byte, error) {
 	if c.RequestConfig.Body.FilePath != "" {
 		return ioutil.ReadFile(c.RequestConfig.Body.FilePath)
 	}

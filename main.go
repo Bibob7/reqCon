@@ -1,8 +1,10 @@
 package main
 
 import (
+	"github.com/Bibob7/reqCon/pkg/config"
 	"github.com/Bibob7/reqCon/pkg/engine"
-	"github.com/Bibob7/reqCon/pkg/engine/config"
+	"github.com/Bibob7/reqCon/pkg/http"
+	"github.com/Bibob7/reqCon/pkg/result"
 	"github.com/urfave/cli/v2"
 	"log"
 	"os"
@@ -21,7 +23,22 @@ func main() {
 			if err != nil {
 				return err
 			}
-			return engine.Run(*con)
+			body, err := con.Body()
+			if err != nil {
+				return err
+			}
+			req := http.NewRequest(
+				con.RequestConfig.Method,
+				con.RequestConfig.Url,
+				con.RequestConfig.Header,
+				body,
+			)
+			runner := engine.NewRunner(&http.Client{}, result.NewResultHandler())
+			return runner.Run(engine.Config{
+				ReqNum:  con.ReqNum,
+				ConcNum: con.ConcNum,
+				Request: req,
+			})
 		},
 	}
 

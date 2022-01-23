@@ -1,44 +1,45 @@
 package engine
 
-import (
-	"fmt"
-	"github.com/Bibob7/reqCon/pkg/engine/config"
-	http "github.com/Bibob7/reqCon/pkg/http"
-	"time"
-)
+type Runner struct {
+	Client        Client
+	ResultHandler ResultHandler
+}
 
-func Run(c config.Config) error {
-	reqTimes := make(chan time.Duration, c.ReqNum)
-	queue := make(chan bool, c.ConcNum)
-	req, err := c.Request()
-	if err != nil {
-		return err
-	}
+func NewRunner(client Client, resultHandler ResultHandler) Runner {
+	return Runner{Client: client, ResultHandler: resultHandler}
+}
 
-	go func(reqTimes chan time.Duration) {
-		var reqCounter int64
-		var summedTimes int64
-		for {
-			duration := <-reqTimes
-			reqCounter++
-			summedTimes += duration.Nanoseconds()
-			fmt.Printf("Average Time: %v \n", time.Duration(summedTimes/reqCounter))
+func (r Runner) Run(c Config) error {
+	errChan := make(chan error, 1)
+	reqResultChan := make(chan ReqResult, c.ReqNum)
+	resultChan := r.ResultHandler.Handle(reqResultChan, c.ReqNum)
+	go r.concurrentRun(c, reqResultChan, errChan)
+	for {
+		select {
+		case err := <-errChan:
+			return err
+		case result := <-resultChan:
+			result.Render()
+			return nil
+		default:
+			// do nothing
 		}
-	}(reqTimes)
+	}
+}
+
+// concurrentRun sends concurrent requests to the target,
+// but the number of concurrent requests is limited by the config
+func (r Runner) concurrentRun(c Config, reqResultChan chan ReqResult, errChan chan error) {
+	maxConcurrent := make(chan struct{}, c.ConcNum)
 
 	for i := 0; i < c.ReqNum; i++ {
-		queue <- true
-		go func(req http.Request, reqTime chan time.Duration) {
-			err := http.SendReq(req, reqTimes)
+		maxConcurrent <- struct{}{}
+		go func(req Request, reqTime chan ReqResult, errChan chan error) {
+			err := r.Client.SendReq(req, reqResultChan)
 			if err != nil {
-				fmt.Printf("Request failed: %v \n", err)
+				errChan <- err
 			}
-			<-queue
-		}(*req, reqTimes)
+			<-maxConcurrent
+		}(c.Request, reqResultChan, errChan)
 	}
-
-	for i := 0; i < c.ConcNum; i++ {
-		queue <- true
-	}
-	return nil
 }
